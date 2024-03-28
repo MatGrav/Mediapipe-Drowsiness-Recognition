@@ -16,4 +16,7 @@ The code is based on the one provided by professor Jacopo Sini and requires open
 In order to detect whether the person is drowsy or not, we first compute, for each captured frame, EAR values for both eyes.
 For further informations the referenced paper is the [following](https://ieeexplore.ieee.org/document/10039811)
 
-#### continuare
+## Distraction recognition
+
+In order to detect whether the driver is distracted or not, we first compute pitch and yaw, considering the combination of Eyes and Head gaze positions.
+If the difference between the axes is at least of 30°, we have to print an alarm.
