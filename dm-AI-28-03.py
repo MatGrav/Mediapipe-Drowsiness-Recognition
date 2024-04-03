@@ -295,10 +295,15 @@ while cap.isOpened():
         # The distorsion parameters
         dist_matrix = np.zeros((4, 1), dtype=np.float64)
 
+        
+        # Let's try to compute rotation matrices (and so pitch and yaw) for both eyes by 2d vectors
+        # So add the flag cv2.SOLVEPNP_EPNP to use the efficient algorithm which uses only 2d points
+        #***** 03/04: without the flag, the algorithm works well
+
         # Solve PnP
         success, rot_vec, trans_vec = cv2.solvePnP(face_3d, face_2d, cam_matrix, dist_matrix)
-        success_left_eye, rot_vec_left_eye, trans_vec_left_eye = cv2.solvePnP(left_eye_3d, left_eye_2d, cam_matrix, dist_matrix)
-        success_right_eye, rot_vec_right_eye, trans_vec_right_eye = cv2.solvePnP(right_eye_3d, right_eye_2d, cam_matrix, dist_matrix)
+        success_left_eye, rot_vec_left_eye, trans_vec_left_eye = cv2.solvePnP(left_eye_3d, left_eye_2d, cam_matrix, dist_matrix, flags=cv2.SOLVEPNP_EPNP)
+        success_right_eye, rot_vec_right_eye, trans_vec_right_eye = cv2.solvePnP(right_eye_3d, right_eye_2d, cam_matrix, dist_matrix, flags=cv2.SOLVEPNP_EPNP)
 
         # Get rotational matrix
         rmat, jac = cv2.Rodrigues(rot_vec)
@@ -322,7 +327,6 @@ while cap.isOpened():
         yaw_right_eye = angles_right_eye[1] * 1800
 
         
-        ## NEW 01/04
         '''
         # Compute the 2D eyes gaze
         # We use only RER (and LEL) insted of using also REL (and LER) -> redundancy 
@@ -354,10 +358,13 @@ while cap.isOpened():
         diff_yaw_right_eye = yaw-yaw_right_eye
         '''
 
-        #if diff_pitch_left_eye<30 or diff_pitch_right_eye<30 or diff_yaw_left_eye<30 or diff_yaw_right_eye<30:
-        #    cv2.putText(image, "ALARM: The driver is distracted", (15, 200), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2) 
-        if abs(roll)>30 or abs(pitch)>30 or abs(yaw)>30:
+        # alternative conditions:
+        if abs(roll +pitch + yaw)>30 or abs(pitch_right_eye+yaw_right_eye+pitch_left_eye+yaw_left_eye)>30:
+        # if abs(roll +pitch + yaw + pitch_right_eye + yaw_right_eye + pitch_left_eye + yaw_left_eye)>30: # tighter condition
+        # if abs(roll)>30 or abs(pitch)>30 or abs(yaw)>30 or abs(pitch_right_eye+yaw_right_eye+pitch_left_eye+yaw_left_eye)>30:
             cv2.putText(image, "ALARM: The driver is distracted", (15, 200), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
+        
+        # DEBUG
         cv2.putText(image, "roll: " + str(roll), (15, 220), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
         cv2.putText(image, "pitch: " + str(pitch), (15, 240), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
         cv2.putText(image, "yaw: " + str(yaw), (15, 260), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
@@ -379,14 +386,14 @@ while cap.isOpened():
         p2 = (int(nose_2d[0] - yaw * line_scale), int(nose_2d[1] - pitch * line_scale))
         cv2.line(image, p1, p2, (255, 0, 0), 3)
 
-        eye_right_3d_projection, jacobian_right_eye = cv2.projectPoints(right_eye_3d, rot_vec, trans_vec, cam_matrix, dist_matrix)
+        # eye_right_3d_projection, jacobian_right_eye = cv2.projectPoints(right_eye_3d, rot_vec, trans_vec, cam_matrix, dist_matrix)
         p3 = (int(right_pupil_2d[0]), int(right_pupil_2d[1]))
-        p4 = (int(right_pupil_2d[0] - pitch_right_eye * line_scale), int(right_pupil_2d[1] - pitch_right_eye * line_scale))
+        p4 = (int(right_pupil_2d[0] + yaw_right_eye * line_scale), int(right_pupil_2d[1] - pitch_right_eye * line_scale))
         cv2.line(image, p3, p4, (255, 0, 0), 3)
 
-        eye_left_3d_projection, jacobian_left_eye = cv2.projectPoints(left_eye_3d, rot_vec, trans_vec, cam_matrix, dist_matrix)
+        # eye_left_3d_projection, jacobian_left_eye = cv2.projectPoints(left_eye_3d, rot_vec, trans_vec, cam_matrix, dist_matrix)
         p5 = (int(left_pupil_2d[0]), int(left_pupil_2d[1]))
-        p6 = (int(left_pupil_2d[0] - pitch_left_eye * line_scale), int(left_pupil_2d[1] - pitch_left_eye * line_scale))
+        p6 = (int(left_pupil_2d[0] + yaw_left_eye * line_scale), int(left_pupil_2d[1] - pitch_left_eye * line_scale))
         cv2.line(image, p5, p6, (255, 0, 0), 3)
 
 
