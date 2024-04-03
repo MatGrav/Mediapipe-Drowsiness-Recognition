@@ -20,3 +20,8 @@ For further informations the referenced paper is the [following](https://ieeexpl
 
 In order to detect whether the driver is distracted or not, we first compute pitch and yaw, considering the combination of Eyes and Head gaze positions.
 If the difference between the axes is at least of 30°, we have to print an alarm.
+
+At the end of the code, there is the code to print the eye gazing.
+Pitch, roll and yaw have been computed yet using 3D representations. For pitch and yaw of both eyes, we can just add a flag (look at the code) to use the Enhanced algorithm, instead of default one, for 2d vectors. Anyway, using 3d computation (so without the flag), the algorithm works better.
+
+To verify the condition and to print the alarm, we have to verify that abs(roll+pitch+yaw)>30 or abs(pitch_left_eye + yaw_left_eye + pitch_right_eye + yaw_right_eye)>30.
