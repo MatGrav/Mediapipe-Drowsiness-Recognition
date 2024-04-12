@@ -16,6 +16,52 @@ The code is based on the one provided by professor Jacopo Sini and requires open
 In order to detect whether the person is drowsy or not, we first compute, for each captured frame, EAR values for both eyes.
 For further informations the referenced paper is the [following](https://ieeexplore.ieee.org/document/10039811)
 
+For each frame, the algorithm takes the position of 6 relevant points for each eye
+```python
+if idx==362:
+  P1_left = (int(lm.x * img_w), int(lm.y * img_h))
+if idx==385:
+  ...
+```
+
+The EAR values for both eyes are then computed accorting to the formula.
+Two threshold values have been chosen, with trial and error, in order to normalize the EAR values in the range [0;1], therefore obtaining a percentage of eye opening.
+```python
+# Reporting only left eye 
+EAR_left  = (abs(P2_left[Y]-P6_left[Y]) + abs(P3_left[Y]-P5_left[Y]))/(2*abs(P1_left[X]-P4_left[X])) 
+
+OPEN_val = 0.32
+CLOSED_val = 0.02
+
+Left_open = (EAR_left-CLOSED_val)/(OPEN_val-CLOSED_val)
+```
+
+It is then possible to compute whether the driver is drowsy or not accordingly to the assignment, which was interpreted as follows:  
+_If the EAR(normalized) is below a threshold for more than 80% of the time in the last 10 seconds, a warning message shall be printed as it indicates drowsiness._
+```python
+THRESHOLD = 0.65
+while sum(elapsed_time) > 10:
+  normalized_EAR.popleft()
+  elapsed_time.popleft()
+
+normalized_EAR.append(min(Left_open,Right_open))
+elapsed_time.append(totalTime)
+
+indices = [index for index, value in enumerate(normalized_EAR) if value < THRESHOLD]
+selected_elements = [elapsed_time[index] for index in indices]
+        
+MAX_INTERVAL = 0.8 * 10
+closed_time = sum(selected_elements)
+if closed_time >= MAX_INTERVAL:
+  cv2.putText(image, "DROWSY", ...
+```
+Two deques have been used in order to consider the last 10 seconds as a circular buffer: one of them contains the minimum normalized EAR (this implies that the driver receives a warning even if the other eye may be completely open, it is a somewhat conservative approach), the other one the time interval between the last frame and the currently processed one.
+
+The time with EAR deemed "too low" is computed and a message is shown when necessary. The message shall not be printed before reaching 10 seconds of statistics or after the driver has intervened, in this case the message disappears after enough time (for 80% and 10 seconds, this means that 2 seconds of open eyes shall be enough)
+
+Note that this interpretation of the assignment substitutes PERCLOS computation, **and the code could be extended in order to check drowsiness with true PERCLOS and/or change modes**
+
+
 ## Distraction recognition
 
 In order to detect whether the driver is distracted or not, we first compute pitch and yaw, considering the combination of Eyes and Head gaze positions.
