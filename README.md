@@ -68,6 +68,23 @@ In order to detect whether the driver is distracted or not, we first compute pit
 If the difference between the axes is at least of 30°, we have to print an alarm.
 
 At the end of the code, there is the code to print the eye gazing.
-Pitch, roll and yaw have been computed yet using 3D representations. For pitch and yaw of both eyes, we can just add a flag (look at the code) to use the Enhanced algorithm, instead of default one, for 2d vectors. Anyway, using 3d computation (so without the flag), the algorithm works better.
+Pitch, roll and yaw have been computed yet using 3D representations. *For pitch and yaw of both eyes, we can just add a flag (look at the code) to use the Enhanced algorithm, instead of default one, for 2d vectors. Anyway, using 3d computation (so without the flag), the algorithm works better.
+However this seems to hold true in the case of HD camera or better, as the increased number of pixels makes the algorithm work properly. Tests with 640x480p have not been successful and therefore we expect to implement a 2D version, possibly leaving the 3D version to be used when HD_MODE is True*
+
+A calibration "step" has been introduced: since our webcam may not be at the same level as our eyes when running the application, 
+an high degree of pitch can be detected even when we are actually trying to look straight ahead, as we would when driving, leading to erroneous distraction detection.
+```python
+pitch_calibration = np.zeros(30,dtype=float)
+while calib_index < len(pitch_calibration):
+    pitch_calibration[calib_index] = pitch
+    calib_index += 1
+    pitch_constant = np.mean(pitch_calibration)
+
+pitch = pitch - pitch_constant #for each frame
+```
+The adopted solution subtracts from the pitch a value calculated by averaging the pitch of the first 30 processed frames: this proves to be a simple yet effective approach which requires the user to look correctly at startup.
+
+We would expect calibration to be implemented also in a real world scenario, with the difference that the position of the camera with respect to the driver shall be known for each car.
+         
 
 To verify the condition and to print the alarm, we have to verify that abs(roll+pitch+yaw)>30 or abs(pitch_left_eye + yaw_left_eye + pitch_right_eye + yaw_right_eye)>30.

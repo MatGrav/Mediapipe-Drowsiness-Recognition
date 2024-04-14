@@ -51,6 +51,8 @@ cap = cv2.VideoCapture(0) # Local webcam (index start from 0)
 
 normalized_EAR = deque()
 elapsed_time = deque()
+calib_index = 0
+HD_MODE = False
 
 # 4 - Iterate (within an infinite loop)
 while cap.isOpened(): 
@@ -80,6 +82,9 @@ while cap.isOpened():
     #image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
     
     img_h, img_w, img_c = image.shape
+    if img_h >= 720 and img_w >= 1280:
+        HD_MODE = True
+        #print(HD_MODE)
 
     FONT_SCALE = 1.5 * 1e-3  # Adjust for larger font size in all images
     font_scale = min(img_w, img_h) * FONT_SCALE
@@ -302,8 +307,13 @@ while cap.isOpened():
 
         # Solve PnP
         success, rot_vec, trans_vec = cv2.solvePnP(face_3d, face_2d, cam_matrix, dist_matrix)
-        success_left_eye, rot_vec_left_eye, trans_vec_left_eye = cv2.solvePnP(left_eye_3d, left_eye_2d, cam_matrix, dist_matrix, flags=cv2.SOLVEPNP_EPNP)
-        success_right_eye, rot_vec_right_eye, trans_vec_right_eye = cv2.solvePnP(right_eye_3d, right_eye_2d, cam_matrix, dist_matrix, flags=cv2.SOLVEPNP_EPNP)
+        success_left_eye, rot_vec_left_eye, trans_vec_left_eye = cv2.solvePnP(left_eye_3d, left_eye_2d, cam_matrix, dist_matrix,
+                                                                              #flags=cv2.SOLVEPNP_EPNP
+                                                                              )
+        success_right_eye, rot_vec_right_eye, trans_vec_right_eye = cv2.solvePnP(right_eye_3d, right_eye_2d, cam_matrix, dist_matrix, 
+                                                                                 #flags=cv2.SOLVEPNP_EPNP
+                                                                                 )
+
 
         # Get rotational matrix
         rmat, jac = cv2.Rodrigues(rot_vec)
@@ -358,6 +368,21 @@ while cap.isOpened():
         diff_yaw_right_eye = yaw-yaw_right_eye
         '''
 
+        # Calibration array for pitch computation, as our webcam may not be at the same level of our head
+        # => Our head's pitch is detected even when we are actually trying to look "straight ahead" 
+        # It is calibrated based on an average of the pitch in the first 30 captured frames
+        # In a real world application, calibration is static as we assume the camera stays fixed in place in the car
+        pitch_calibration = np.zeros(30,dtype=float)
+        
+        while calib_index < len(pitch_calibration):
+            pitch_calibration[calib_index] = pitch
+            calib_index += 1
+            pitch_constant = np.mean(pitch_calibration)
+
+        pitch = pitch - pitch_constant
+
+
+        # Distraction detection
         # alternative conditions:
         if abs(roll +pitch + yaw)>30 or abs(pitch_right_eye+yaw_right_eye+pitch_left_eye+yaw_left_eye)>30:
         # if abs(roll +pitch + yaw + pitch_right_eye + yaw_right_eye + pitch_left_eye + yaw_left_eye)>30: # tighter condition
@@ -371,7 +396,10 @@ while cap.isOpened():
         cv2.putText(image, "pitch_left_eye: " + str(pitch_left_eye), (15, 280), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
         cv2.putText(image, "pitch_right_eye: " + str(pitch_right_eye), (15, 300), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
         cv2.putText(image, "yaw_left_eye: " + str(yaw_left_eye), (15, 320), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
-        cv2.putText(image, "yaw_right_eye: " + str(yaw_right_eye), (15, 340), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)        
+        cv2.putText(image, "yaw_right_eye: " + str(yaw_right_eye), (15, 340), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
+        cv2.putText(image, "1st cond: " + str(abs(roll +pitch + yaw)), (15, 360), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
+        cv2.putText(image, "2nd cond: " + str(abs(pitch_right_eye+yaw_right_eye+pitch_left_eye+yaw_left_eye)), (15, 380), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
+
         
         '''
         cv2.putText(image, "angle_left: " + str(angle_left), (15, 220), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
@@ -379,18 +407,20 @@ while cap.isOpened():
         
         '''
 
-        # Display directions (code example for the nose)
+        # Display directions
         nose_3d_projection, jacobian = cv2.projectPoints(nose_3d, rot_vec, trans_vec, cam_matrix, dist_matrix)
         p1 = (int(nose_2d[0]), int(nose_2d[1]))
         
         p2 = (int(nose_2d[0] - yaw * line_scale), int(nose_2d[1] - pitch * line_scale))
         cv2.line(image, p1, p2, (255, 0, 0), 3)
 
+        # right eye direction
         # eye_right_3d_projection, jacobian_right_eye = cv2.projectPoints(right_eye_3d, rot_vec, trans_vec, cam_matrix, dist_matrix)
         p3 = (int(right_pupil_2d[0]), int(right_pupil_2d[1]))
         p4 = (int(right_pupil_2d[0] + yaw_right_eye * line_scale), int(right_pupil_2d[1] - pitch_right_eye * line_scale))
         cv2.line(image, p3, p4, (255, 0, 0), 3)
 
+        # left eye direction
         # eye_left_3d_projection, jacobian_left_eye = cv2.projectPoints(left_eye_3d, rot_vec, trans_vec, cam_matrix, dist_matrix)
         p5 = (int(left_pupil_2d[0]), int(left_pupil_2d[1]))
         p6 = (int(left_pupil_2d[0] + yaw_left_eye * line_scale), int(left_pupil_2d[1] - pitch_left_eye * line_scale))
@@ -410,14 +440,8 @@ while cap.isOpened():
         else:
             fps=0
         
-        
-        THRESHOLD = 0.65
-
-        #if Left_open < THRESHOLD or Right_open < THRESHOLD:
-
-        #else:
-            
-        #test_stat = []
+        #Drowsiness detection
+        NORM_EAR_THRESHOLD = 0.65
 
         while sum(elapsed_time) > 10:
             normalized_EAR.popleft()
@@ -426,7 +450,7 @@ while cap.isOpened():
         normalized_EAR.append(min(Left_open,Right_open))
         elapsed_time.append(totalTime)
 
-        indices = [index for index, value in enumerate(normalized_EAR) if value < THRESHOLD]
+        indices = [index for index, value in enumerate(normalized_EAR) if value < NORM_EAR_THRESHOLD]
         selected_elements = [elapsed_time[index] for index in indices]
         
         #MAX_INTERVAL = 0.8 * 10
