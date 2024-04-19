@@ -48,11 +48,14 @@ drawing_spec = mp_drawing.DrawingSpec(thickness=1, circle_radius=1)
 # 3 - Open the video source
 cap = cv2.VideoCapture(0) # Local webcam (index start from 0)
 
-
+# 3.1 - Declaration of some variables 
 normalized_EAR = deque()
 elapsed_time = deque()
 calib_index = 0
-HD_MODE = False
+HD_MODE = False # TO DO: Use?
+CALIBRATION_BUFFER_DIM = 30 # TO DO : Change if needed
+pitch_calibration = np.zeros(CALIBRATION_BUFFER_DIM,dtype=float)
+
 
 # 4 - Iterate (within an infinite loop)
 while cap.isOpened(): 
@@ -68,7 +71,7 @@ while cap.isOpened():
         #continue
     #else: #needed with some cameras/video input format
         #image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
+        
     # To improve performace
     image.flags.writeable = False
     
@@ -331,13 +334,14 @@ while cap.isOpened():
         if roll > 180:
             roll = roll - 360
         
+        
         pitch_left_eye = angles_left_eye[0] * 1800
         yaw_left_eye = angles_left_eye[1] * 1800
         pitch_right_eye = angles_right_eye[0] * 1800
         yaw_right_eye = angles_right_eye[1] * 1800
-
         
-        '''
+        
+        
         # Compute the 2D eyes gaze
         # We use only RER (and LEL) insted of using also REL (and LER) -> redundancy 
         # Calcola il gaze dell'occhio destro
@@ -347,6 +351,17 @@ while cap.isOpened():
         eye_gaze_2d_left = (point_LEIC[0] - point_LEL[0], point_LEIC[1] - point_LEL[1])
 
         # Calcola l'angolo di deviazione del gaze rispetto al centro dell'occhio destro
+        #diff_x_right = abs(eye_gaze_2d_right[0] - nose_2d[0])
+        #diff_y_right = abs(eye_gaze_2d_right[1] - nose_2d[1])
+        angle_right = np.arctan2(eye_gaze_2d_right[Y], eye_gaze_2d_right[X]) * 180 / np.pi
+
+        # Calcola l'angolo di deviazione del gaze rispetto al centro dell'occhio sinistro
+        #diff_x_left = abs(eye_gaze_2d_left[0] - nose_2d[0])
+        #diff_y_left = abs(eye_gaze_2d_left[1] - nose_2d[1])
+        angle_left = np.arctan2(eye_gaze_2d_left[Y], eye_gaze_2d_left[X]) * 180 / np.pi
+
+        ''' This is the previous code, above there is the work in progress
+        # Calcola l'angolo di deviazione del gaze rispetto al centro dell'occhio destro
         diff_x_right = abs(eye_gaze_2d_right[0] - nose_2d[0])
         diff_y_right = abs(eye_gaze_2d_right[1] - nose_2d[1])
         angle_right = np.arctan2(diff_y_right, diff_x_right) * 180 / np.pi
@@ -355,7 +370,12 @@ while cap.isOpened():
         diff_x_left = abs(eye_gaze_2d_left[0] - nose_2d[0])
         diff_y_left = abs(eye_gaze_2d_left[1] - nose_2d[1])
         angle_left = np.arctan2(diff_y_left, diff_x_left) * 180 / np.pi
+        '''
 
+        # DEBUG
+        cv2.putText(image, "angle_left: " + str(angle_left), (15, 320), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
+        cv2.putText(image, "angle_right: " + str(angle_right), (15, 340), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
+        
         # Controlla se la deviazione è maggiore di una certa soglia (ad esempio, 30 gradi) rispetto al centro dell'occhio
         # Se entrambi gli occhi hanno una deviazione superiore alla soglia, attiva l'allarme
         if angle_left > 30 and angle_right > 30:
@@ -366,37 +386,46 @@ while cap.isOpened():
         diff_pitch_right_eye = pitch-pitch_right_eye
         diff_yaw_left_eye = yaw-yaw_left_eye
         diff_yaw_right_eye = yaw-yaw_right_eye
-        '''
+        
 
         # Calibration array for pitch computation, as our webcam may not be at the same level of our head
         # => Our head's pitch is detected even when we are actually trying to look "straight ahead" 
         # It is calibrated based on an average of the pitch in the first 30 captured frames
         # In a real world application, calibration is static as we assume the camera stays fixed in place in the car
-        pitch_calibration = np.zeros(30,dtype=float)
         
-        while calib_index < len(pitch_calibration):
+        key = cv2.waitKey(1)
+        while calib_index < len(pitch_calibration) or key == 114 or key == 82:
+            
+            if key==114 or key==82: # Pressing r or R
+                pitch_calibration = np.zeros(CALIBRATION_BUFFER_DIM,dtype=float)
+                calib_index = 0
+                pitch_constant = 0
+                key = 0
+            
             pitch_calibration[calib_index] = pitch
             calib_index += 1
             pitch_constant = np.mean(pitch_calibration)
+            #print(pitch_constant) #DEBUG #TO DO: Clean
+            
 
         pitch = pitch - pitch_constant
 
 
         # Distraction detection
         # alternative conditions:
-        if abs(roll +pitch + yaw)>30 or abs(pitch_right_eye+yaw_right_eye+pitch_left_eye+yaw_left_eye)>30:
+        if abs(roll + pitch + yaw)>30 :
         # if abs(roll +pitch + yaw + pitch_right_eye + yaw_right_eye + pitch_left_eye + yaw_left_eye)>30: # tighter condition
         # if abs(roll)>30 or abs(pitch)>30 or abs(yaw)>30 or abs(pitch_right_eye+yaw_right_eye+pitch_left_eye+yaw_left_eye)>30:
             cv2.putText(image, "ALARM: The driver is distracted", (15, 200), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
         
         # DEBUG
-        cv2.putText(image, "roll: " + str(roll), (15, 220), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
-        cv2.putText(image, "pitch: " + str(pitch), (15, 240), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
-        cv2.putText(image, "yaw: " + str(yaw), (15, 260), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
-        cv2.putText(image, "pitch_left_eye: " + str(pitch_left_eye), (15, 280), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
-        cv2.putText(image, "pitch_right_eye: " + str(pitch_right_eye), (15, 300), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
-        cv2.putText(image, "yaw_left_eye: " + str(yaw_left_eye), (15, 320), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
-        cv2.putText(image, "yaw_right_eye: " + str(yaw_right_eye), (15, 340), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
+        cv2.putText(image, "roll: " + str(np.round(roll, 4)), (15, 220), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
+        cv2.putText(image, "pitch: " + str(np.round(pitch, 4)), (15, 240), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
+        cv2.putText(image, "yaw: " + str(np.round(yaw, 4)), (15, 260), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
+        #cv2.putText(image, "pitch_left_eye: " + str(pitch_left_eye), (15, 280), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
+        #cv2.putText(image, "pitch_right_eye: " + str(pitch_right_eye), (15, 300), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
+        #cv2.putText(image, "yaw_left_eye: " + str(yaw_left_eye), (15, 320), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
+        #cv2.putText(image, "yaw_right_eye: " + str(yaw_right_eye), (15, 340), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
         cv2.putText(image, "1st cond: " + str(abs(roll +pitch + yaw)), (15, 360), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
         cv2.putText(image, "2nd cond: " + str(abs(pitch_right_eye+yaw_right_eye+pitch_left_eye+yaw_left_eye)), (15, 380), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
 
