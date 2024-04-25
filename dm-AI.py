@@ -353,13 +353,23 @@ while cap.isOpened():
         # Calcola l'angolo di deviazione del gaze rispetto al centro dell'occhio destro
         #diff_x_right = abs(eye_gaze_2d_right[0] - nose_2d[0])
         #diff_y_right = abs(eye_gaze_2d_right[1] - nose_2d[1])
-        angle_right = np.arctan2(eye_gaze_2d_right[Y], eye_gaze_2d_right[X]) * 180 / np.pi
+        diff_x_right = abs(eye_gaze_2d_right[X]/r_eye_width)
+        diff_x_left = abs(eye_gaze_2d_left[X]/l_eye_width)
+        diff_x_max = max(diff_x_right,diff_x_left)
 
+        diff_y_right = abs(eye_gaze_2d_right[Y]/r_eye_height)
+        diff_y_left = abs(eye_gaze_2d_left[Y]/l_eye_height)
+        diff_y_max = max(diff_y_left,diff_y_right)
+
+        GAZE_X_THRESHOLD = 0.52
+        GAZE_Y_THRESHOLD = 0.25
+        '''
         # Calcola l'angolo di deviazione del gaze rispetto al centro dell'occhio sinistro
         #diff_x_left = abs(eye_gaze_2d_left[0] - nose_2d[0])
         #diff_y_left = abs(eye_gaze_2d_left[1] - nose_2d[1])
-        angle_left = np.arctan2(eye_gaze_2d_left[Y], eye_gaze_2d_left[X]) * 180 / np.pi
-
+        angle_left = eye_gaze_2d_left[0]/l_eye_width
+        '''
+        
         ''' This is the previous code, above there is the work in progress
         # Calcola l'angolo di deviazione del gaze rispetto al centro dell'occhio destro
         diff_x_right = abs(eye_gaze_2d_right[0] - nose_2d[0])
@@ -373,12 +383,15 @@ while cap.isOpened():
         '''
 
         # DEBUG
-        cv2.putText(image, "angle_left: " + str(angle_left), (15, 320), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
-        cv2.putText(image, "angle_right: " + str(angle_right), (15, 340), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
+        cv2.putText(image, "diff_x_left: " + str(np.round(diff_x_left, 3)), (15, 320), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
+        cv2.putText(image, "diff_x_right: " + str(np.round(diff_x_right, 3)), (15, 340), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
+        cv2.putText(image, "diff_y_left: " + str(np.round(diff_y_left, 3)), (305, 320), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
+        cv2.putText(image, "diff_y_right: " + str(np.round(diff_y_right, 3)), (305, 340), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
         
+
         # Controlla se la deviazione è maggiore di una certa soglia (ad esempio, 30 gradi) rispetto al centro dell'occhio
         # Se entrambi gli occhi hanno una deviazione superiore alla soglia, attiva l'allarme
-        if angle_left > 30 and angle_right > 30:
+        if diff_x_max >= GAZE_X_THRESHOLD or diff_y_max >= GAZE_Y_THRESHOLD:
             cv2.putText(image, "ALARM: The driver is distracted", (15, 200), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
         
         # Compute the 3D head gaze

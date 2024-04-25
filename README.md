@@ -85,6 +85,29 @@ pitch = pitch - pitch_constant #for each frame
 The adopted solution subtracts from the pitch a value calculated by averaging the pitch of the first 30 processed frames: this proves to be a simple yet effective approach which requires the user to look correctly at startup.
 
 We would expect calibration to be implemented also in a real world scenario, with the difference that the position of the camera with respect to the driver shall be known for each car.
-         
+
+### 2D Eye gazing
+
+The currently (as of commit 14) distraction recognition algorithm is meant to work also with low resolution cameras, in which the low number of pixel generally worsens the performance based on 3D calculation.
+
+Therefore, the algorithm works with the 2D image by computing, for each eye, the distance between the iris center and eye center both in horizontal and vertical components, which are then normalized by dividing by the height or width.
+The max horizontal distance and vertical distance are then each compared to threshold values, which have been chosen by trial and error.
+A warning message is printed whenever one of the distances is larger than values.
+
+```python
+#Reporting for simplicity code regarding right eye only 
+eye_gaze_2d_right = (point_REIC[0] - point_RER[0], point_REIC[1] - point_RER[1])
+
+diff_x_right = abs(eye_gaze_2d_right[X]/r_eye_width)
+diff_x_max = max(diff_x_right,diff_x_left)
+diff_y_right = abs(eye_gaze_2d_right[Y]/r_eye_height)
+diff_y_max = max(diff_y_left,diff_y_right)
+
+GAZE_X_THRESHOLD = 0.52
+GAZE_Y_THRESHOLD = 0.25
+
+if diff_x_max >= GAZE_X_THRESHOLD or diff_y_max > GAZE_Y_THRESHOLD:
+  cv2.putText(image, "ALARM: ...")
+```
 
 To verify the condition and to print the alarm, we have to verify that abs(roll+pitch+yaw)>30 or abs(pitch_left_eye + yaw_left_eye + pitch_right_eye + yaw_right_eye)>30.
