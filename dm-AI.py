@@ -52,7 +52,6 @@ cap = cv2.VideoCapture(0) # Local webcam (index start from 0)
 normalized_EAR = deque()
 elapsed_time = deque()
 calib_index = 0
-HD_MODE = False # TO DO: Use?
 CALIBRATION_BUFFER_DIM = 30 # TO DO : Change if needed
 pitch_calibration = np.zeros(CALIBRATION_BUFFER_DIM,dtype=float)
 
@@ -85,9 +84,7 @@ while cap.isOpened():
     #image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
     
     img_h, img_w, img_c = image.shape
-    if img_h >= 720 and img_w >= 1280:
-        HD_MODE = True
-        #print(HD_MODE)
+
 
     FONT_SCALE = 1.5 * 1e-3  # Adjust for larger font size in all images
     font_scale = min(img_w, img_h) * FONT_SCALE
@@ -427,7 +424,6 @@ while cap.isOpened():
             pitch_calibration[calib_index] = pitch
             calib_index += 1
             pitch_constant = np.mean(pitch_calibration)
-            #print(pitch_constant) #DEBUG #TO DO: Clean
             
 
         pitch = pitch - pitch_constant

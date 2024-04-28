@@ -67,9 +67,9 @@ Note that this interpretation of the assignment substitutes PERCLOS computation,
 In order to detect whether the driver is distracted or not, we first compute pitch and yaw, considering the combination of Eyes and Head gaze positions.
 If the difference between the axes is at least of 30°, we have to print an alarm.
 
-At the end of the code, there is the code to print the eye gazing.
-Pitch, roll and yaw have been computed yet using 3D representations. *For pitch and yaw of both eyes, we can just add a flag (look at the code) to use the Enhanced algorithm, instead of default one, for 2d vectors. Anyway, using 3d computation (so without the flag), the algorithm works better.
-However this seems to hold true in the case of HD camera or better, as the increased number of pixels makes the algorithm work properly. Tests with 640x480p have not been successful and therefore we expect to implement a 2D version, possibly leaving the 3D version to be used when HD_MODE is True*
+### 3D Head Gazing
+
+Pitch, roll and yaw for the head have been computed using 3D representations, with the definition of a camera matrix (as in the pinhole model) and computation of first rotational vectors, then rotational matrix and angles.
 
 A calibration "step" has been introduced: since our webcam may not be at the same level as our eyes when running the application, 
 an high degree of pitch can be detected even when we are actually trying to look straight ahead, as we would when driving, leading to erroneous distraction detection.
@@ -86,12 +86,16 @@ The adopted solution subtracts from the pitch a value calculated by averaging th
 
 We would expect calibration to be implemented also in a real world scenario, with the difference that the position of the camera with respect to the driver shall be known for each car.
 
+
 ### 2D Eye gazing
 
-The currently (as of commit 14) distraction recognition algorithm is meant to work also with low resolution cameras, in which the low number of pixel generally worsens the performance based on 3D calculation.
+Even though the 3D approach is theoretically valid also for eye angles, the results are unsatisfactory when using low resolution cameras, due to the low number of pixels for the eyes. 
 
-Therefore, the algorithm works with the 2D image by computing, for each eye, the distance between the iris center and eye center both in horizontal and vertical components, which are then normalized by dividing by the height or width.
-The max horizontal distance and vertical distance are then each compared to threshold values, which have been chosen by trial and error.
+In order to obtain a code with a distraction recognitizion algorithm compatible with most laptop cameras, a 2D approach has been proposed.
+
+The algorithm works with the 2D image by computing, for each eye, the distance between the iris center and eye center both in horizontal and vertical components, *which are then normalized by dividing by the height or width.
+The max horizontal distance and vertical distance are then each compared to threshold values, which have been chosen by trial and error.*
+
 A warning message is printed whenever one of the distances is larger than values.
 
 ```python
@@ -110,4 +114,4 @@ if diff_x_max >= GAZE_X_THRESHOLD or diff_y_max > GAZE_Y_THRESHOLD:
   cv2.putText(image, "ALARM: ...")
 ```
 
-To verify the condition and to print the alarm, we have to verify that abs(roll+pitch+yaw)>30 or abs(pitch_left_eye + yaw_left_eye + pitch_right_eye + yaw_right_eye)>30.
+*To verify the condition and to print the alarm, we have to verify that abs(roll+pitch+yaw)>30 or abs(pitch_left_eye + yaw_left_eye + pitch_right_eye + yaw_right_eye)>30.*
