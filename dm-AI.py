@@ -340,6 +340,8 @@ while cap.isOpened():
         # Calcola il gaze dell'occhio destro
         #eye_gaze_2d_right = (point_REIC[0] - point_RER[0], point_REIC[1] - point_RER[1])
         eye_gaze_2d_right = ((point_REIC[X] - r_eye_center[X])/(r_eye_width/2), (point_REIC[Y] - r_eye_center[Y])/(r_eye_height/2))
+        
+        # DEBUG
         cv2.putText(image, "REIC_Y: " + str(np.round(point_REIC[Y], 3)), (315, 140), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
         cv2.putText(image, "RIGHT EYE CENTER y: " + str(np.round(r_eye_center[Y], 3)), (315, 160), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
         cv2.putText(image, "R HEIGHT: " + str(np.round(r_eye_height, 3)), (315, 180), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
@@ -350,13 +352,23 @@ while cap.isOpened():
         #eye_gaze_2d_left = (point_LEIC[0] - point_LEL[0], point_LEIC[1] - point_LEL[1])
         eye_gaze_2d_left = ((point_LEIC[X] - l_eye_center[X])/(l_eye_width/2), (point_LEIC[Y] - l_eye_center[Y])/(l_eye_height/2))
 
-        
+        # Angles source: https://biology.stackexchange.com/questions/72511/what-are-the-max-angles-of-human-eyeball-rotation
+        # Written in degrees, these are meant per side
+        HORIZONTAL_MAX_ROTATION_DEGREES = 35 
+        VERTICAL_MAX_ROTATION_DEGREES = 25
+
+        angles_left_eye_2D = (eye_gaze_2d_left[X] * HORIZONTAL_MAX_ROTATION_DEGREES, eye_gaze_2d_left[Y] * VERTICAL_MAX_ROTATION_DEGREES)
+        print(angles_left_eye_2D)
+
+        #angles_right_eye_2D = (eye_gaze_2d_right[X] * HORIZONTAL_MAX_ROTATION_DEGREES, eye_gaze_2d_right[Y] * VERTICAL_MAX_ROTATION_DEGREES)
+        #print(angles_right_eye_2D)
 
         # Qual è la soglia migliore?
         # Va stampato a intermittenza o secondo un intervallo continuo?
         soglia_x = 0.25
         soglia_y = 0.25
         
+        #if max(abs(eye_gaze_2d_right[X]),abs(eye_gaze_2d_left[X]))>soglia_x or max(abs(eye_gaze_2d_right[Y]),abs(eye_gaze_2d_left[Y]))>soglia_y :
         if abs(eye_gaze_2d_right[X])>soglia_x or abs(eye_gaze_2d_right[Y])>soglia_y or abs(eye_gaze_2d_left[X])>soglia_x or abs(eye_gaze_2d_left[Y])>soglia_y:
             cv2.putText(image, "DOVE GUARDI?!", (15, 15), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
 
@@ -501,7 +513,6 @@ while cap.isOpened():
         selected_elements = [elapsed_time[index] for index in indices]
         
         MAX_INTERVAL = 0.8 * 10
-        #MAX_INTERVAL = 0.5 * 10
 
         closed_time = sum(selected_elements)
         if closed_time >= MAX_INTERVAL:
