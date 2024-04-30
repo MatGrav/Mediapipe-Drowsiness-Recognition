@@ -345,14 +345,21 @@ while cap.isOpened():
         cv2.putText(image, "R HEIGHT: " + str(np.round(r_eye_height, 3)), (315, 180), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
         cv2.putText(image, "(cast) REIC_Y: " + str(np.round(int(point_REIC[Y]), 3)), (315, 200), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
         cv2.putText(image, "(cast)REYE CENTER y: " + str(np.round(int(r_eye_center[Y]), 3)), (315, 220), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
-        
-        if point_REIC[Y] >= r_eye_center[Y]:
-            cv2.putText(image, "MAMMT: ", (33, 33), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
-    
 
         # Calcola il gaze dell'occhio sinistro
         #eye_gaze_2d_left = (point_LEIC[0] - point_LEL[0], point_LEIC[1] - point_LEL[1])
         eye_gaze_2d_left = ((point_LEIC[X] - l_eye_center[X])/(l_eye_width/2), (point_LEIC[Y] - l_eye_center[Y])/(l_eye_height/2))
+
+        
+
+        # Qual è la soglia migliore?
+        # Va stampato a intermittenza o secondo un intervallo continuo?
+        soglia_x = 0.25
+        soglia_y = 0.25
+        
+        if abs(eye_gaze_2d_right[X])>soglia_x or abs(eye_gaze_2d_right[Y])>soglia_y or abs(eye_gaze_2d_left[X])>soglia_x or abs(eye_gaze_2d_left[Y])>soglia_y:
+            cv2.putText(image, "DOVE GUARDI?!", (15, 15), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
+
 
         # Calcola l'angolo di deviazione del gaze rispetto al centro dell'occhio destro
         #diff_x_right = abs(eye_gaze_2d_right[0] - nose_2d[0])
