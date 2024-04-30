@@ -307,12 +307,8 @@ while cap.isOpened():
 
         # Solve PnP
         success, rot_vec, trans_vec = cv2.solvePnP(face_3d, face_2d, cam_matrix, dist_matrix)
-        success_left_eye, rot_vec_left_eye, trans_vec_left_eye = cv2.solvePnP(left_eye_3d, left_eye_2d, cam_matrix, dist_matrix,
-                                                                              #flags=cv2.SOLVEPNP_EPNP
-                                                                              )
-        success_right_eye, rot_vec_right_eye, trans_vec_right_eye = cv2.solvePnP(right_eye_3d, right_eye_2d, cam_matrix, dist_matrix, 
-                                                                                 #flags=cv2.SOLVEPNP_EPNP
-                                                                                 )
+        success_left_eye, rot_vec_left_eye, trans_vec_left_eye = cv2.solvePnP(left_eye_3d, left_eye_2d, cam_matrix, dist_matrix)
+        success_right_eye, rot_vec_right_eye, trans_vec_right_eye = cv2.solvePnP(right_eye_3d, right_eye_2d, cam_matrix, dist_matrix)
 
 
         # Get rotational matrix
@@ -343,11 +339,11 @@ while cap.isOpened():
         # We use only RER (and LEL) insted of using also REL (and LER) -> redundancy 
         # Calcola il gaze dell'occhio destro
         #eye_gaze_2d_right = (point_REIC[0] - point_RER[0], point_REIC[1] - point_RER[1])
-        eye_gaze_2d_right = (point_REIC[X] - r_eye_center[X], point_REIC[Y] - r_eye_center[Y])
+        eye_gaze_2d_right = ((point_REIC[X] - r_eye_center[X])/(r_eye_width/2), (point_REIC[Y] - r_eye_center[Y])/(r_eye_height/2))
 
         # Calcola il gaze dell'occhio sinistro
         #eye_gaze_2d_left = (point_LEIC[0] - point_LEL[0], point_LEIC[1] - point_LEL[1])
-        eye_gaze_2d_left = (point_LEIC[X] - l_eye_center[X], point_LEIC[Y] - l_eye_center[Y])
+        eye_gaze_2d_left = ((point_LEIC[X] - l_eye_center[X])/(l_eye_width/2), (point_LEIC[Y] - l_eye_center[Y])/(l_eye_height/2))
 
         # Calcola l'angolo di deviazione del gaze rispetto al centro dell'occhio destro
         #diff_x_right = abs(eye_gaze_2d_right[0] - nose_2d[0])
@@ -370,18 +366,6 @@ while cap.isOpened():
         #diff_x_left = abs(eye_gaze_2d_left[0] - nose_2d[0])
         #diff_y_left = abs(eye_gaze_2d_left[1] - nose_2d[1])
         angle_left = eye_gaze_2d_left[0]/l_eye_width
-        '''
-        
-        ''' This is the previous code, above there is the work in progress
-        # Calcola l'angolo di deviazione del gaze rispetto al centro dell'occhio destro
-        diff_x_right = abs(eye_gaze_2d_right[0] - nose_2d[0])
-        diff_y_right = abs(eye_gaze_2d_right[1] - nose_2d[1])
-        angle_right = np.arctan2(diff_y_right, diff_x_right) * 180 / np.pi
-
-        # Calcola l'angolo di deviazione del gaze rispetto al centro dell'occhio sinistro
-        diff_x_left = abs(eye_gaze_2d_left[0] - nose_2d[0])
-        diff_y_left = abs(eye_gaze_2d_left[1] - nose_2d[1])
-        angle_left = np.arctan2(diff_y_left, diff_x_left) * 180 / np.pi
         '''
 
         # DEBUG
@@ -437,15 +421,15 @@ while cap.isOpened():
             cv2.putText(image, "ALARM: The driver is distracted", (15, 200), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
         
         # DEBUG
-        cv2.putText(image, "roll: " + str(np.round(roll, 4)), (15, 220), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
-        cv2.putText(image, "pitch: " + str(np.round(pitch, 4)), (15, 240), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
-        cv2.putText(image, "yaw: " + str(np.round(yaw, 4)), (15, 260), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
+        #cv2.putText(image, "roll: " + str(np.round(roll, 4)), (15, 220), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
+        #cv2.putText(image, "pitch: " + str(np.round(pitch, 4)), (15, 240), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
+        #cv2.putText(image, "yaw: " + str(np.round(yaw, 4)), (15, 260), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
         #cv2.putText(image, "pitch_left_eye: " + str(pitch_left_eye), (15, 280), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
         #cv2.putText(image, "pitch_right_eye: " + str(pitch_right_eye), (15, 300), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
         #cv2.putText(image, "yaw_left_eye: " + str(yaw_left_eye), (15, 320), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
         #cv2.putText(image, "yaw_right_eye: " + str(yaw_right_eye), (15, 340), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
-        cv2.putText(image, "1st cond: " + str(abs(roll +pitch + yaw)), (15, 360), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
-        cv2.putText(image, "2nd cond: " + str(abs(pitch_right_eye+yaw_right_eye+pitch_left_eye+yaw_left_eye)), (15, 380), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
+        #cv2.putText(image, "1st cond: " + str(abs(roll +pitch + yaw)), (15, 360), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
+        #cv2.putText(image, "2nd cond: " + str(abs(pitch_right_eye+yaw_right_eye+pitch_left_eye+yaw_left_eye)), (15, 380), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
 
         
         '''
@@ -460,7 +444,7 @@ while cap.isOpened():
         
         p2 = (int(nose_2d[0] - yaw * line_scale), int(nose_2d[1] - pitch * line_scale))
         cv2.line(image, p1, p2, (255, 0, 0), 3)
-
+        '''
         # right eye direction
         # eye_right_3d_projection, jacobian_right_eye = cv2.projectPoints(right_eye_3d, rot_vec, trans_vec, cam_matrix, dist_matrix)
         p3 = (int(right_pupil_2d[0]), int(right_pupil_2d[1]))
@@ -472,7 +456,7 @@ while cap.isOpened():
         p5 = (int(left_pupil_2d[0]), int(left_pupil_2d[1]))
         p6 = (int(left_pupil_2d[0] + yaw_left_eye * line_scale), int(left_pupil_2d[1] - pitch_left_eye * line_scale))
         cv2.line(image, p5, p6, (255, 0, 0), 3)
-
+        '''
 
         #cv2.putText(image, "Yaw: " + str(np.round( (yaw_left_eye+yaw_right_eye)/2,2)) + " , pitch = " + str(np.round( (pitch_left_eye+pitch_right_eye)/2,0)) + ", roll: " + str(np.round(roll,0)), (15, 270), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2) 
         # cv2.putText(image, "Yaw: " + str(np.round(yaw_right_eye, 2)) + " , pitch = " + str(np.round(pitch_right_eye, 2)) + ", roll: " + str(np.round(roll, 0)), (15, 270), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
@@ -500,14 +484,14 @@ while cap.isOpened():
         indices = [index for index, value in enumerate(normalized_EAR) if value < NORM_EAR_THRESHOLD]
         selected_elements = [elapsed_time[index] for index in indices]
         
-        #MAX_INTERVAL = 0.8 * 10
-        MAX_INTERVAL = 0.5 * 10
+        MAX_INTERVAL = 0.8 * 10
+        #MAX_INTERVAL = 0.5 * 10
 
         closed_time = sum(selected_elements)
         if closed_time >= MAX_INTERVAL:
             cv2.putText(image, "DROWSY", (20, 20), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2) 
-        else:
-            cv2.putText(image, "", (20, 20), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2) 
+        # else:
+        #    cv2.putText(image, "", (20, 20), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2) 
         
         #print("FPS:", fps)
 
