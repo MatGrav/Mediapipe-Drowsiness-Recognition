@@ -260,8 +260,8 @@ while cap.isOpened():
             r_eye_height = point_REB[1] - point_RET[1]
             r_eye_center = [(point_REL[0] + point_RER[0])/2 ,(point_REB[1] + point_RET[1])/2]
             #cv2.circle(image, (int(r_eye_center[0]), int(r_eye_center[1])), radius=int(horizontal_threshold * r_eye_width), color=(255, 0, 0), thickness=-1) #center of eye and its radius 
-            cv2.circle(image, (int(point_REIC[0]), int(point_REIC[1])), radius=3, color=(0, 0, 255), thickness=-1) # Center of iris
-            cv2.circle(image, (int(r_eye_center[0]), int(r_eye_center[1])), radius=2, color=(128, 128, 128), thickness=-1) # Center of eye
+            cv2.circle(image, (int(point_REIC[0]), int(point_REIC[1])), radius=2, color=(0, 255, 0), thickness=-1) # Center of iris
+            cv2.circle(image, (int(r_eye_center[0]), int(r_eye_center[1])), radius=2, color=(0, 0, 255), thickness=-1) # Center of eye
             #print("right eye: x = " + str(np.round(point_REIC[0],0)) + " , y = " + str(np.round(point_REIC[1],0)))
             cv2.putText(image, "Right eye: x = " + str(np.round(point_REIC[0],0)) + " , y = " + str(np.round(point_REIC[1],0)), (50, 100), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2) 
 
@@ -340,6 +340,15 @@ while cap.isOpened():
         # Calcola il gaze dell'occhio destro
         #eye_gaze_2d_right = (point_REIC[0] - point_RER[0], point_REIC[1] - point_RER[1])
         eye_gaze_2d_right = ((point_REIC[X] - r_eye_center[X])/(r_eye_width/2), (point_REIC[Y] - r_eye_center[Y])/(r_eye_height/2))
+        cv2.putText(image, "REIC_Y: " + str(np.round(point_REIC[Y], 3)), (315, 140), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
+        cv2.putText(image, "RIGHT EYE CENTER y: " + str(np.round(r_eye_center[Y], 3)), (315, 160), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
+        cv2.putText(image, "R HEIGHT: " + str(np.round(r_eye_height, 3)), (315, 180), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
+        cv2.putText(image, "(cast) REIC_Y: " + str(np.round(int(point_REIC[Y]), 3)), (315, 200), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
+        cv2.putText(image, "(cast)REYE CENTER y: " + str(np.round(int(r_eye_center[Y]), 3)), (315, 220), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
+        
+        if point_REIC[Y] >= r_eye_center[Y]:
+            cv2.putText(image, "MAMMT: ", (33, 33), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
+    
 
         # Calcola il gaze dell'occhio sinistro
         #eye_gaze_2d_left = (point_LEIC[0] - point_LEL[0], point_LEIC[1] - point_LEL[1])
