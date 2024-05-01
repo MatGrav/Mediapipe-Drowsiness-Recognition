@@ -450,16 +450,19 @@ while cap.isOpened():
         # if abs(roll +pitch + yaw + pitch_right_eye + yaw_right_eye + pitch_left_eye + yaw_left_eye)>30: # tighter condition
         # if abs(roll)>30 or abs(pitch)>30 or abs(yaw)>30 or abs(pitch_right_eye+yaw_right_eye+pitch_left_eye+yaw_left_eye)>30:
         if angles_right_eye_2d[X]>0 or angles_left_eye_2d[X]>0:
-            alfa=max(angles_right_eye_2d[X], angles_left_eye_2d[X])
+            alfa= 2.5 * max(angles_right_eye_2d[X], angles_left_eye_2d[X])
         else:
-            alfa=min(angles_right_eye_2d[X], angles_left_eye_2d[X])
+            alfa= 2.5 * min(angles_right_eye_2d[X], angles_left_eye_2d[X])
+
+        yaw = -yaw
 
         if abs(yaw + alfa)>30:
             cv2.putText(image, "ALARM: The driver is distracted", (15, 200), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
 
         cv2.putText(image, "yaw: " + str(np.round(yaw, 3)), (15, 140), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
         cv2.putText(image, "alfa: " + str(np.round(alfa, 3)), (15, 160), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
-
+        #cv2.putText(image, "yaw_left_eye: " + str(np.round(yaw_left_eye, 3)), (15, 180), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
+        #cv2.putText(image, "yaw_right_eye: " + str(np.round(yaw_right_eye, 3)), (15, 200), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
         
         # DEBUG
         #cv2.putText(image, "roll: " + str(np.round(roll, 4)), (15, 220), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
