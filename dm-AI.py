@@ -54,6 +54,7 @@ elapsed_time = deque()
 calib_index = 0
 CALIBRATION_BUFFER_DIM = 30 # TO DO : Change if needed
 pitch_calibration = np.zeros(CALIBRATION_BUFFER_DIM,dtype=float)
+yaw_calibration = np.zeros(CALIBRATION_BUFFER_DIM,dtype=float)
 
 
 # 4 - Iterate (within an infinite loop)
@@ -432,16 +433,21 @@ while cap.isOpened():
             
             if key==114 or key==82: # Pressing r or R
                 pitch_calibration = np.zeros(CALIBRATION_BUFFER_DIM,dtype=float)
+                yaw_calibration = np.zeros(CALIBRATION_BUFFER_DIM,dtype=float)
                 calib_index = 0
                 pitch_constant = 0
+                yaw_constant = 0
                 key = 0
             
             pitch_calibration[calib_index] = pitch
+            yaw_calibration[calib_index] = yaw
             calib_index += 1
             pitch_constant = np.mean(pitch_calibration)
+            yaw_constant = np.mean(yaw_calibration)
             
 
         pitch = pitch - pitch_constant
+        yaw = yaw - yaw_constant
 
 
         # Distraction detection
@@ -450,9 +456,11 @@ while cap.isOpened():
         # if abs(roll +pitch + yaw + pitch_right_eye + yaw_right_eye + pitch_left_eye + yaw_left_eye)>30: # tighter condition
         # if abs(roll)>30 or abs(pitch)>30 or abs(yaw)>30 or abs(pitch_right_eye+yaw_right_eye+pitch_left_eye+yaw_left_eye)>30:
         if angles_right_eye_2d[X]>0 or angles_left_eye_2d[X]>0:
-            alfa= 2.5 * max(angles_right_eye_2d[X], angles_left_eye_2d[X])
+            alfa= 1.5 * max(angles_right_eye_2d[X], angles_left_eye_2d[X])
         else:
-            alfa= 2.5 * min(angles_right_eye_2d[X], angles_left_eye_2d[X])
+            alfa= 1.5 * min(angles_right_eye_2d[X], angles_left_eye_2d[X])
+
+        
 
         yaw = -yaw
 
