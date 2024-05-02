@@ -302,9 +302,9 @@ while cap.isOpened():
         dist_matrix = np.zeros((4, 1), dtype=np.float64)
 
         
-        # Let's try to compute rotation matrices (and so pitch and yaw) for both eyes by 2d vectors
-        # So add the flag cv2.SOLVEPNP_EPNP to use the efficient algorithm which uses only 2d points
-        #***** 03/04: without the flag, the algorithm works well
+        # Computation of rotation matrices
+        # This still contains the variables used in 3D approach with eyes, not used for the actual gazing
+
 
         # Solve PnP
         success, rot_vec, trans_vec = cv2.solvePnP(face_3d, face_2d, cam_matrix, dist_matrix)
@@ -337,22 +337,18 @@ while cap.isOpened():
         
         
         # Compute the 2D eyes gaze
-        # We use only RER (and LEL) insted of using also REL (and LER) -> redundancy 
-        # Calcola il gaze dell'occhio destro
-        #eye_gaze_2d_right = (point_REIC[0] - point_RER[0], point_REIC[1] - point_RER[1])
+        # Components are in the [-1;1] range, looking  RIGHT->left  or  DOWN (in theory) -> UP
         eye_gaze_2d_right = ((point_REIC[X] - r_eye_center[X])/(r_eye_width/2), (point_REIC[Y] - r_eye_center[Y])/(r_eye_height/2))
-        
+        eye_gaze_2d_left = ((point_LEIC[X] - l_eye_center[X])/(l_eye_width/2), (point_LEIC[Y] - l_eye_center[Y])/(l_eye_height/2))
+
         # DEBUG
         #cv2.putText(image, "REIC_Y: " + str(np.round(point_REIC[Y], 3)), (315, 140), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
         #cv2.putText(image, "RIGHT EYE CENTER y: " + str(np.round(r_eye_center[Y], 3)), (315, 160), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
         #cv2.putText(image, "R HEIGHT: " + str(np.round(r_eye_height, 3)), (315, 180), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
-        #cv2.putText(image, "(cast) REIC_Y: " + str(np.round(int(point_REIC[Y]), 3)), (315, 200), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
-        #cv2.putText(image, "(cast)REYE CENTER y: " + str(np.round(int(r_eye_center[Y]), 3)), (315, 220), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
-
-        # Calcola il gaze dell'occhio sinistro
-        #eye_gaze_2d_left = (point_LEIC[0] - point_LEL[0], point_LEIC[1] - point_LEL[1])
-        eye_gaze_2d_left = ((point_LEIC[X] - l_eye_center[X])/(l_eye_width/2), (point_LEIC[Y] - l_eye_center[Y])/(l_eye_height/2))
-
+        
+        
+        # Angles approach
+        '''
         # Angles source: https://biology.stackexchange.com/questions/72511/what-are-the-max-angles-of-human-eyeball-rotation
         # Written in degrees, these are meant per side
         HORIZONTAL_MAX_ROTATION_DEGREES = 35 
@@ -366,6 +362,7 @@ while cap.isOpened():
 
         #cv2.putText(image, "Angles left eye: " + str(np.round(angles_left_eye_2d, 3)), (15, 140), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
         #cv2.putText(image, "Angles right eye: " + str(np.round(angles_right_eye_2d, 3)), (15, 160), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
+        '''
 
         # Qual è la soglia migliore?
         # Va stampato a intermittenza o secondo un intervallo continuo?
@@ -391,13 +388,6 @@ while cap.isOpened():
 
         GAZE_X_THRESHOLD = 0.52
         GAZE_Y_THRESHOLD = 0.25
-        '''
-
-        '''
-        # Calcola l'angolo di deviazione del gaze rispetto al centro dell'occhio sinistro
-        #diff_x_left = abs(eye_gaze_2d_left[0] - nose_2d[0])
-        #diff_y_left = abs(eye_gaze_2d_left[1] - nose_2d[1])
-        angle_left = eye_gaze_2d_left[0]/l_eye_width
         '''
 
         # DEBUG
@@ -449,24 +439,27 @@ while cap.isOpened():
         pitch = pitch - pitch_constant
         yaw = yaw - yaw_constant
 
+        '''
+        if angles_right_eye_2d[X]>0 or angles_left_eye_2d[X]>0:
+            alfa= 1.5 * max(angles_right_eye_2d[X], angles_left_eye_2d[X])
+        else:
+            alfa= 1.5 * min(angles_right_eye_2d[X], angles_left_eye_2d[X])
+        '''
+
+        yaw = -yaw
 
         # Distraction detection
         # alternative conditions:
         #if abs(roll + pitch + yaw)>30 :
         # if abs(roll +pitch + yaw + pitch_right_eye + yaw_right_eye + pitch_left_eye + yaw_left_eye)>30: # tighter condition
         # if abs(roll)>30 or abs(pitch)>30 or abs(yaw)>30 or abs(pitch_right_eye+yaw_right_eye+pitch_left_eye+yaw_left_eye)>30:
-        if angles_right_eye_2d[X]>0 or angles_left_eye_2d[X]>0:
-            alfa= 1.5 * max(angles_right_eye_2d[X], angles_left_eye_2d[X])
-        else:
-            alfa= 1.5 * min(angles_right_eye_2d[X], angles_left_eye_2d[X])
-
         
-
-        yaw = -yaw
-
+        alfa = 0
         if abs(yaw + alfa)>30:
             cv2.putText(image, "ALARM: The driver is distracted", (15, 200), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
 
+        
+        # DEBUG
         cv2.putText(image, "yaw: " + str(np.round(yaw, 3)), (15, 140), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
         cv2.putText(image, "alfa: " + str(np.round(alfa, 3)), (15, 160), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
         #cv2.putText(image, "yaw_left_eye: " + str(np.round(yaw_left_eye, 3)), (15, 180), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
@@ -480,15 +473,7 @@ while cap.isOpened():
         #cv2.putText(image, "pitch_right_eye: " + str(pitch_right_eye), (15, 300), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
         #cv2.putText(image, "yaw_left_eye: " + str(yaw_left_eye), (15, 320), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
         #cv2.putText(image, "yaw_right_eye: " + str(yaw_right_eye), (15, 340), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
-        #cv2.putText(image, "1st cond: " + str(abs(roll +pitch + yaw)), (15, 360), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
-        #cv2.putText(image, "2nd cond: " + str(abs(pitch_right_eye+yaw_right_eye+pitch_left_eye+yaw_left_eye)), (15, 380), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
-
         
-        '''
-        cv2.putText(image, "angle_left: " + str(angle_left), (15, 220), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
-        cv2.putText(image, "angle_right: " + str(angle_right), (15, 240), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
-        
-        '''
 
         # Display directions
         nose_3d_projection, jacobian = cv2.projectPoints(nose_3d, rot_vec, trans_vec, cam_matrix, dist_matrix)
@@ -541,15 +526,13 @@ while cap.isOpened():
         closed_time = sum(selected_elements)
         if closed_time >= MAX_INTERVAL:
             cv2.putText(image, "DROWSY", (20, 20), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2) 
-        # else:
-        #    cv2.putText(image, "", (20, 20), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2) 
         
         #print("FPS:", fps)
 
         cv2.putText(image, f'FPS : {int(fps)}', (20,450), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 0, 255), 2)
 
         # 4.5 - Show the frame to the user
-        cv2.imshow('Technologies for Autonomous Vehicles - Driver Monitoring Systems using AI code sample', image)       
+        cv2.imshow('Technologies for Autonomous Vehicles - Driver Monitoring Systems using AI code', image)       
                     
     if cv2.waitKey(5) & 0xFF == 27:
         break
