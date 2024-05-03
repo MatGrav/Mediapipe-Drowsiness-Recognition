@@ -361,7 +361,8 @@ while cap.isOpened():
         ## It is calibrated based on an average of the pitch in the first 30 captured frames
         ## In a real world application, calibration is static as we assume the camera stays fixed in place in the car
         key = cv2.waitKey(1)
-        while calib_index < len(pitch_calibration) or key == 114 or key == 82:
+        if calib_index < len(pitch_calibration) or key == 114 or key == 82:
+            cv2.putText(image, "Calibrating pitch and yaw", (15, 150), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 255, 255), 2)
             
             if key==114 or key==82: # Pressing r or R
                 pitch_calibration = np.zeros(CALIBRATION_BUFFER_DIM,dtype=float)
