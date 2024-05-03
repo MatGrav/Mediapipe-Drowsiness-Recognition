@@ -1,6 +1,8 @@
 # Mediapipe-Drowsiness-Recognition
 Real-time drowsiness recognition based on mediapipe
 
+Authors: Matteo Gravagnone, Danilo Guglielmi
+
 ## Introduction
 
 This project shall provide a solution to the Assignment 1 of the course 'Technologies for Autonomous Vehicles' year 2023/24 at Politecnico di Torino.
@@ -32,7 +34,8 @@ CLOSED_VAL = 0.02
 # ...
 
 # Reporting only left eye 
-EAR_left  = (abs(P2_left[Y]-P6_left[Y]) + abs(P3_left[Y]-P5_left[Y]))/(2*abs(P1_left[X]-P4_left[X])) 
+EAR_left  = (abs(P2_left[Y]-P6_left[Y]) + abs(P3_left[Y]-P5_left[Y]))/
+            (2*abs(P1_left[X]-P4_left[X])) 
 
 Left_open = (EAR_left-CLOSED_VAL)/(OPEN_VAL-CLOSED_VAL)
 ```
@@ -52,7 +55,8 @@ while sum(elapsed_time) > 10:
 normalized_EAR.append(min(Left_open,Right_open))
 elapsed_time.append(totalTime)
 
-indices = [index for index, value in enumerate(normalized_EAR) if value < NORM_EAR_THRESHOLD]
+indices = [index for index, value in enumerate(normalized_EAR)
+          if value < NORM_EAR_THRESHOLD]
 selected_elements = [elapsed_time[index] for index in indices]
 ```
 
@@ -119,13 +123,16 @@ During our tests, differences between these distances have been noticed between 
 
 ```python
 #Reporting for simplicity code regarding right eye only 
-eye_gaze_2d_right = ((point_REIC[X] - r_eye_center[X])/(r_eye_width/2), (point_REIC[Y] - r_eye_center[Y])/(r_eye_height/2))
-eye_gaze_2d_left = ((point_LEIC[X] - l_eye_center[X])/(l_eye_width/2), (point_LEIC[Y] - l_eye_center[Y])/(l_eye_height/2))
+eye_gaze_2d_right = ((point_REIC[X] - r_eye_center[X])/(r_eye_width/2),
+(point_REIC[Y] - r_eye_center[Y])/(r_eye_height/2))
+eye_gaze_2d_left = ((point_LEIC[X] - l_eye_center[X])/(l_eye_width/2),
+(point_LEIC[Y] - l_eye_center[Y])/(l_eye_height/2))
 
 
-if max(abs(eye_gaze_2d_right[X]),abs(eye_gaze_2d_left[X]))>X_THRESHOLD or max(abs(eye_gaze_2d_right[Y]),abs(eye_gaze_2d_left[Y]))>Y_THRESHOLD :
+if max(abs(eye_gaze_2d_right[X]),abs(eye_gaze_2d_left[X]))>X_THRESHOLD
+or max(abs(eye_gaze_2d_right[Y]),abs(eye_gaze_2d_left[Y]))>Y_THRESHOLD :
             eye_distraction = True
 
 if ... or abs(yaw)>30 or eye_distraction is True:
-            cv2.putText(image, "ALARM: The driver is distracted", (15, 200), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
+            cv2.putText(image, "ALARM: The driver is distracted", ... )
 ```
