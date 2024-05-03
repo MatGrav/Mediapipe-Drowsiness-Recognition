@@ -7,7 +7,7 @@
 #   Company: Politecnico di Torino
 #   Date: 19 Mar 2024
 #
-#   Drowsiness and distraction recognition by: Danilo Guglielmi, Matteo Gravagnone
+#   Drowsiness and distraction recognition by: Danilo Guglielmi (s318083), Matteo Gravagnone (s319634)
 #
 #**************************************************************************************
 
@@ -56,6 +56,8 @@ X = 0
 Y = 1
 OPEN_VAL = 0.32
 CLOSED_VAL = 0.02
+NORM_EAR_THRESHOLD = 0.68
+
 
 normalized_EAR = deque()
 elapsed_time = deque()
@@ -396,7 +398,7 @@ while cap.isOpened():
 
         ## Distraction detection
         if abs(roll)>30 or abs(pitch)>30 or abs(yaw)>30 or eye_distraction is True:
-            cv2.putText(image, "ALARM: The driver is distracted", (15, 200), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
+            cv2.putText(image, "Warning: Driver is distracted", (15, 200), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
 
         # DEBUG
         #cv2.putText(image, "roll: " + str(np.round(roll, 4)), (15, 220), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
@@ -421,7 +423,6 @@ while cap.isOpened():
             fps=0
         
         ## Drowsiness detection
-        NORM_EAR_THRESHOLD = 0.65
 
         while sum(elapsed_time) > 10:
             normalized_EAR.popleft()
@@ -437,7 +438,7 @@ while cap.isOpened():
 
         closed_time = sum(selected_elements)
         if closed_time >= MAX_INTERVAL:
-            cv2.putText(image, "DROWSY", (20, 20), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2) 
+             cv2.putText(image, "Warning: Driver is drowsy", (15, 230), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
         
         #print("FPS:", fps)
 
