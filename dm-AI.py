@@ -56,7 +56,9 @@ X = 0
 Y = 1
 OPEN_VAL = 0.32
 CLOSED_VAL = 0.02
+TEMPORAL_WINDOW_SECONDS = 10
 NORM_EAR_THRESHOLD = 0.68
+BLINK_DETECTION_SECONDS = 0.25
 
 
 normalized_EAR = deque()
@@ -64,6 +66,7 @@ elapsed_time = deque()
 calib_index = 0
 pitch_calibration = np.zeros(CALIBRATION_BUFFER_DIM,dtype=float)
 yaw_calibration = np.zeros(CALIBRATION_BUFFER_DIM,dtype=float)
+distracted_time = 0
 
 
 
@@ -337,25 +340,12 @@ while cap.isOpened():
         if roll > 180:
             roll = roll - 360
         
-        
         #pitch_left_eye = angles_left_eye[0] * 1800
         #yaw_left_eye = angles_left_eye[1] * 1800
         #pitch_right_eye = angles_right_eye[0] * 1800
         #yaw_right_eye = angles_right_eye[1] * 1800
         
-        
-        
-        ## Compute the 2D eyes gaze
-        ## Components are in the [-1;1] range, looking  RIGHT->left  or  DOWN (in theory) -> UP
-        eye_gaze_2d_right = ((point_REIC[X] - r_eye_center[X])/(r_eye_width/2), (point_REIC[Y] - r_eye_center[Y])/(r_eye_height/2))
-        eye_gaze_2d_left = ((point_LEIC[X] - l_eye_center[X])/(l_eye_width/2), (point_LEIC[Y] - l_eye_center[Y])/(l_eye_height/2))
 
-        # DEBUG
-        #cv2.putText(image, "REIC_Y: " + str(np.round(point_REIC[Y], 3)), (315, 140), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
-        #cv2.putText(image, "RIGHT EYE CENTER y: " + str(np.round(r_eye_center[Y], 3)), (315, 160), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
-        #cv2.putText(image, "R HEIGHT: " + str(np.round(r_eye_height, 3)), (315, 180), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
-        
-        
         ## Calibration array for pitch computation, as our webcam may not be at the same level of our head
         ## => Our head's pitch is detected even when we are actually trying to look "straight ahead" 
         ## It is calibrated based on an average of the pitch in the first 30 captured frames
@@ -383,8 +373,21 @@ while cap.isOpened():
         yaw = yaw - yaw_constant
 
 
-        X_THRESHOLD = 0.25
-        Y_THRESHOLD = 0.25
+        # DEBUG
+        #cv2.putText(image, "roll: " + str(np.round(roll, 4)), (15, 220), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
+        #cv2.putText(image, "pitch: " + str(np.round(pitch, 4)), (15, 240), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
+        #cv2.putText(image, "yaw: " + str(np.round(yaw, 4)), (15, 260), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
+        
+        
+        ## Compute the 2D eyes gaze
+        ## Components are in the [-1;1] range, looking  RIGHT->left  or  DOWN (in theory) -> UP
+        eye_gaze_2d_right = ((point_REIC[X] - r_eye_center[X])/(r_eye_width/2), (point_REIC[Y] - r_eye_center[Y])/(r_eye_height/2))
+        eye_gaze_2d_left = ((point_LEIC[X] - l_eye_center[X])/(l_eye_width/2), (point_LEIC[Y] - l_eye_center[Y])/(l_eye_height/2))
+
+        # DEBUG
+        #cv2.putText(image, "REIC_Y: " + str(np.round(point_REIC[Y], 3)), (315, 140), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
+        #cv2.putText(image, "RIGHT EYE CENTER y: " + str(np.round(r_eye_center[Y], 3)), (315, 160), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
+        #cv2.putText(image, "R HEIGHT: " + str(np.round(r_eye_height, 3)), (315, 180), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
         
         # DEBUG
         #cv2.putText(image, "right_X: " + str(np.round(eye_gaze_2d_right[X], 3)), (15, 320), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
@@ -392,19 +395,23 @@ while cap.isOpened():
         #cv2.putText(image, "left_X: " + str(np.round(eye_gaze_2d_left[X], 3)), (305, 320), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
         #cv2.putText(image, "left_y: " + str(np.round(eye_gaze_2d_left[Y], 3)), (305, 340), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
 
-        
+        ## Distraction detection
+        X_THRESHOLD = 0.25
+        Y_THRESHOLD = 0.25
+
         if max(abs(eye_gaze_2d_right[X]),abs(eye_gaze_2d_left[X]))>X_THRESHOLD or max(abs(eye_gaze_2d_right[Y]),abs(eye_gaze_2d_left[Y]))>Y_THRESHOLD :
             eye_distraction = True
 
-
-        ## Distraction detection
         if abs(roll)>30 or abs(pitch)>30 or abs(yaw)>30 or eye_distraction is True:
-            cv2.putText(image, "Warning: Driver is distracted", (15, 200), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
+            distracted=True
+        else:
+            distracted=False
+            distracted_time = 0
 
-        # DEBUG
-        #cv2.putText(image, "roll: " + str(np.round(roll, 4)), (15, 220), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
-        #cv2.putText(image, "pitch: " + str(np.round(pitch, 4)), (15, 240), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
-        #cv2.putText(image, "yaw: " + str(np.round(yaw, 4)), (15, 260), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
+        if distracted is True:
+            distracted_time = distracted_time + totalTime
+        if distracted_time > BLINK_DETECTION_SECONDS: # to avoid false positives due to blink
+            cv2.putText(image, "Warning: Driver is distracted", (15, 200), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
         
 
         # Display directions
@@ -425,7 +432,7 @@ while cap.isOpened():
         
         ## Drowsiness detection
 
-        while sum(elapsed_time) > 10:
+        while sum(elapsed_time) > TEMPORAL_WINDOW_SECONDS:
             normalized_EAR.popleft()
             elapsed_time.popleft()
         
@@ -435,7 +442,7 @@ while cap.isOpened():
         indices = [index for index, value in enumerate(normalized_EAR) if value < NORM_EAR_THRESHOLD]
         selected_elements = [elapsed_time[index] for index in indices]
         
-        MAX_INTERVAL = 0.8 * 10
+        MAX_INTERVAL = 0.8 * TEMPORAL_WINDOW_SECONDS # 80 %
 
         closed_time = sum(selected_elements)
         if closed_time >= MAX_INTERVAL:

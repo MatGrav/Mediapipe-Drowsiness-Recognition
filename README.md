@@ -48,7 +48,7 @@ Two deques have been used in order to consider the last 10 seconds as a circular
 ```python
 NORM_EAR_THRESHOLD = 0.65
 
-while sum(elapsed_time) > 10:
+while sum(elapsed_time) > TEMPORAL_WINDOW_SECONDS:
     normalized_EAR.popleft()
     elapsed_time.popleft()
 
@@ -60,13 +60,13 @@ indices = [index for index, value in enumerate(normalized_EAR)
 selected_elements = [elapsed_time[index] for index in indices]
 ```
 
-The time with EAR deemed "too low" is computed and a message is shown if conditions are met. The message shall not be printed before reaching 10 seconds of statistics or after the driver has intervened. In this case the message disappears after enough time (for 80% and 10 seconds, this means that 2 seconds of open eyes shall be enough).
+The time with EAR deemed "too low" is computed and a message is shown if conditions are met. The message shall not be printed before reaching 10 seconds of statistics or after the driver has intervened. In this case the message disappears after enough time (for 80% of `TEMPORAL_WINDOW_SECONDS` (10 seconds), this means that 2 seconds of open eyes shall be enough).
 ```python
-MAX_INTERVAL = 0.8 * 10
+MAX_INTERVAL = 0.8 * TEMPORAL_WINDOW_SECONDS # 80 %
 
 closed_time = sum(selected_elements)
 if closed_time >= MAX_INTERVAL:
-    cv2.putText(image, "DROWSY",...
+    cv2.putText(image, "Warning: Driver is drowsy", ... )
 ```
 
 Note that this interpretation of the assignment substitutes PERCLOS computation, **and the code could be extended in order to check drowsiness with true PERCLOS and/or change modes**
@@ -86,7 +86,7 @@ an high degree of pitch can be detected even when we are actually trying to look
 A similar reasoning can be done regarding the yaw, as our head may not easily be exactly in front of the camera.
 ```python
 key = cv2.waitKey(1)
-while calib_index < len(pitch_calibration) or key == 114 or key == 82:
+if calib_index < len(pitch_calibration) or key == 114 or key == 82:
     
     if key==114 or key==82: # Pressing r or R
         pitch_calibration = np.zeros(CALIBRATION_BUFFER_DIM,dtype=float)
@@ -120,7 +120,7 @@ In order to obtain a code with a distraction recognitizion algorithm compatible 
 The algorithm works with the 2D image by computing, for each eye, the relative positions between the iris center and eye center both in horizontal and vertical components, which are then normalized by dividing by half of the height or width.
 During our tests, differences between these distances have been noticed between left and right eye, so we have chosen to compare the max value in each direction to threshold values — `X_THRESHOLD` or `Y_THRESHOLD` — which have been empirically chosen.
 
-
+Furthermore, to avoid false positives due to blinks, we introduced the variable `distracted_time` which indicates how long the driver has been distracted. It is then compared with `BLINK_DETECTION_SECONDS` and a warning message is printed when the value is reached. The constant is based on the average blinking time and allows to filter quick movements.
 ```python
 #Reporting for simplicity code regarding right eye only 
 eye_gaze_2d_right = ((point_REIC[X] - r_eye_center[X])/(r_eye_width/2),
@@ -130,9 +130,17 @@ eye_gaze_2d_left = ((point_LEIC[X] - l_eye_center[X])/(l_eye_width/2),
 
 
 if max(abs(eye_gaze_2d_right[X]),abs(eye_gaze_2d_left[X]))>X_THRESHOLD
-or max(abs(eye_gaze_2d_right[Y]),abs(eye_gaze_2d_left[Y]))>Y_THRESHOLD :
-            eye_distraction = True
+or max(abs(eye_gaze_2d_right[Y]),abs(eye_gaze_2d_left[Y]))>Y_THRESHOLD:
+  eye_distraction = True
 
 if ... or abs(yaw)>30 or eye_distraction is True:
-            cv2.putText(image, "ALARM: The driver is distracted", ... )
+  distracted=True
+else:
+  distracted=False
+  distracted_time = 0
+
+if distracted is True:
+  distracted_time = distracted_time + totalTime
+if distracted_time > BLINK_DETECTION_SECONDS: # to avoid false positives due to blink
+  cv2.putText(image, "Warning: Driver is distracted", ... )
 ```
