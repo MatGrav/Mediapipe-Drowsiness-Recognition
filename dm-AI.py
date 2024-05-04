@@ -395,25 +395,6 @@ while cap.isOpened():
         #cv2.putText(image, "left_X: " + str(np.round(eye_gaze_2d_left[X], 3)), (305, 320), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
         #cv2.putText(image, "left_y: " + str(np.round(eye_gaze_2d_left[Y], 3)), (305, 340), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
 
-        ## Distraction detection
-        X_THRESHOLD = 0.25
-        Y_THRESHOLD = 0.25
-
-        if max(abs(eye_gaze_2d_right[X]),abs(eye_gaze_2d_left[X]))>X_THRESHOLD or max(abs(eye_gaze_2d_right[Y]),abs(eye_gaze_2d_left[Y]))>Y_THRESHOLD :
-            eye_distraction = True
-
-        if abs(roll)>30 or abs(pitch)>30 or abs(yaw)>30 or eye_distraction is True:
-            distracted=True
-        else:
-            distracted=False
-            distracted_time = 0
-
-        if distracted is True:
-            distracted_time = distracted_time + totalTime
-        if distracted_time > BLINK_DETECTION_SECONDS: # to avoid false positives due to blink
-            cv2.putText(image, "Warning: Driver is distracted", (15, 200), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
-        
-
         # Display directions
         nose_3d_projection, jacobian = cv2.projectPoints(nose_3d, rot_vec, trans_vec, cam_matrix, dist_matrix)
         p1 = (int(nose_2d[0]), int(nose_2d[1]))
@@ -431,7 +412,6 @@ while cap.isOpened():
             fps=0
         
         ## Drowsiness detection
-
         while sum(elapsed_time) > TEMPORAL_WINDOW_SECONDS:
             normalized_EAR.popleft()
             elapsed_time.popleft()
@@ -447,6 +427,25 @@ while cap.isOpened():
         closed_time = sum(selected_elements)
         if closed_time >= MAX_INTERVAL:
              cv2.putText(image, "Warning: Driver is drowsy", (15, 230), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
+
+
+        ## Distraction detection
+        X_THRESHOLD = 0.25
+        Y_THRESHOLD = 0.25
+
+        if max(abs(eye_gaze_2d_right[X]),abs(eye_gaze_2d_left[X]))>X_THRESHOLD or max(abs(eye_gaze_2d_right[Y]),abs(eye_gaze_2d_left[Y]))>Y_THRESHOLD :
+            eye_distraction = True
+
+        if abs(roll)>30 or abs(pitch)>30 or abs(yaw)>30 or eye_distraction is True:
+            distracted=True
+        else:
+            distracted=False
+            distracted_time = 0
+
+        if distracted is True:
+            distracted_time = distracted_time + totalTime
+        if distracted_time > BLINK_DETECTION_SECONDS: # to avoid false positives due to blink
+            cv2.putText(image, "Warning: Driver is distracted", (15, 200), cv2.FONT_HERSHEY_SIMPLEX, font_scale, (0, 0, 255), 2)
         
         #print("FPS:", fps)
 
